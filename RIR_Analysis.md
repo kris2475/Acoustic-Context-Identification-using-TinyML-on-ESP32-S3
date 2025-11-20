@@ -1,6 +1,6 @@
 Room Impulse Response (RIR) and Reverberation Time Analysis
 
-This repository contains the data and theoretical background for analyzing the acoustic characteristics of a space using its Room Impulse Response (RIR). The primary goal is to determine the Reverberation Time ($\text{T}_{60}$), a key metric in architectural acoustics.
+This repository contains the data and theoretical background for analyzing the acoustic characteristics of a space using its Room Impulse Response (RIR). The primary goal is to determine the Reverberation Time ($\text{T}_{60}$), a key metric in architectural acoustics, and compare different domestic environments.
 
 1. Theoretical Background
 
@@ -8,39 +8,27 @@ This repository contains the data and theoretical background for analyzing the a
 
 The Room Impulse Response (RIR), denoted as $h(t)$ in acoustic literature, is the acoustic fingerprint of a space. It describes how sound waves travel from a source (e.g., a speaker) to a receiver (e.g., a microphone) within that room.
 
-The RIR is theoretically the sound recorded when an instantaneous, ideal impulse of sound is generated. In practice, due to the difficulty of generating an ideal impulse, it is typically measured by playing a known test signal (like an Exponential Sine Sweep, as used in this measurement) and mathematically de-convolving the recorded signal to derive the RIR.
+The RIR is theoretically the sound recorded when an instantaneous, ideal impulse of sound is generated. In practice, due to the difficulty of generating an ideal impulse, it is typically measured by playing a known test signal (like an Exponential Sine Sweep) and mathematically de-convolving the recorded signal to derive the RIR.
 
 1.2. Reverberation Time (T60)
 
 Reverberation Time ($\text{T}_{60}$ or T60) is the most critical metric extracted from the RIR. It is defined as the time required for the sound energy in a room to decay by 60 decibels (dB) after the sound source has stopped.
 
-A short $\text{T}_{60}$ implies an acoustically "dry" room (good for speech clarity, like a classroom). A long $\text{T}_{60}$ implies an acoustically "live" or "reverberant" room (like a cathedral or concert hall).
+A short $\text{T}_{60}$ implies an acoustically "dry" room (good for speech clarity). A long $\text{T}_{60}$ implies an acoustically "live" or "reverberant" room (like a cathedral).
 
 1.3. Schroeder Integration and Energy Decay Curve (EDC)
 
-The rir_energy_decay_data.csv file is generated using the Schroeder Reverse Integration Method.
-
-This method involves integrating the squared RIR signal backwards in time to create a smooth, cumulative decay curve, known as the Energy Decay Curve (EDC). This mathematical approach minimizes the effects of noise and non-linearities in the measured RIR, providing a much cleaner decay plot than integrating forward.
+The Schroeder Reverse Integration Method is used to derive a smooth decay curve, known as the Energy Decay Curve (EDC), from the raw RIR. This mathematical approach minimizes the effects of noise.
 
 The mathematical concept for the reverse integration is:
 
 $$E(t) = \int_{t}^{\infty} h^2(\tau) d\tau$$
 
-Note: In the acoustic analysis, this equation is calculated via discrete summation of the squared RIR data points in reverse.
-
-Where:
-
-$E(t)$ is the energy decay at time $t$.
-
-$h^2(\tau)$ is the squared impulse response.
-
-The result is normalized so the maximum value (at $t=0$) is $0$ dB.
+Note: In the acoustic analysis script, this is calculated via discrete summation of the squared RIR data points in reverse.
 
 2. Analysis Methods for Noise-Limited Data
 
-Accurate $\text{T}_{60}$ calculation requires a 60 dB Dynamic Range (the difference between the peak signal and the ambient noise floor).
-
-When the dynamic range is less than 60 dB, we use partial decay measures and extrapolate:
+Accurate $\text{T}_{60}$ calculation requires a 60 dB Dynamic Range (the difference between the peak signal and the ambient noise floor). When the dynamic range is less than 60 dB, we use partial decay measures and extrapolate:
 
 T20: The time taken for the sound energy to decay by 20 dB (from $-5$ dB to $-25$ dB).
 
@@ -50,60 +38,82 @@ T30: The time taken for the sound energy to decay by 30 dB (from $-5$ dB to $-35
 
 Extrapolation Formula: T60 = 2 * T30
 
-3. Case Study: Living Room Measurement
+3. Comparative Case Studies: Living Room vs. Conservatory
 
-3.1. Context and Setup
+This section compares the acoustic characteristics of two distinct residential spaces measured using the RIR method.
+
+3.1. Case Study 1: Carpeted Living Room
+
+This analysis is based on the pre-processed data in rir_energy_decay_data.csv.
 
 Parameter
 
 Value
 
+Deduction
+
 Room Type
 
 Residential Living Room
+
+Expected T60: Short
 
 Acoustic Treatment
 
 Fully carpeted floor, sofa, soft furnishings (absorptive)
 
-Measurement Signal
+High absorption leads to rapid sound decay.
 
-Exponential Sine Sweep (ESS)
+Dynamic Range
 
-Recording Duration
+$\approx -29$ dB (Noise Floor)
 
-5 seconds (as seen in the rir_energy_decay_data.csv)
+Measurement is noise-limited; requires T20/T30 extrapolation.
 
-Data Source
+Estimated T60
 
-rir_energy_decay_data.csv
+0.4 s to 0.7 s
 
-3.2. Deductions from the Energy Decay Curve (EDC)
+Excellent for speech clarity and comfortable listening. The room is acoustically "dry."
 
-The analysis of the EDC data provided the following key insights:
+3.2. Case Study 2: Conservatory
 
-Low Dynamic Range: The decay curve flattens out significantly after approximately $0.5$ seconds, reaching a noise floor of roughly $-29$ dB.
+This analysis is based on the raw and extracted RIR files (rir.wav and extracted_rir.wav).
 
-Interpretation: The measurement is noise-limited. The ambient noise (from internal or external sources) is only 29 dB below the peak signal, preventing the measurement of the full 60 dB decay. This necessitates the use of $\text{T}_{20}$ or $\text{T}_{30}$ extrapolation.
+Physical Feature
 
-Acoustically Dry Environment: The initial, valid portion of the decay is very steep.
+Acoustic Effect
 
-Interpretation: This rapid decay confirms the acoustic impact of the carpeted floors and soft furnishings. These materials are highly sound-absorbent, leading to a short reverberation time.
+Expected T60
 
-Estimated $\text{T}_{60}$: Based on typical residential room acoustics and the steepness of the initial decay, the true $\text{T}_{60}$ is likely in the $0.4 \text{s}$ to $0.7 \text{s}$ range. This is excellent for speech intelligibility and typical for a comfortable domestic space.
+Construction
+
+Large glass walls and hard flooring (reflective)
+
+High reflection leads to slow sound decay.
+
+Expected Behavior
+
+Significant echo and potential flutter echo between parallel surfaces.
+
+Sound energy is largely trapped.
+
+Estimated T60
+
+1.0 s or higher
+
+Poor speech intelligibility; the room is acoustically "live" or "reverberant."
 
 3.3. Next Steps in Analysis
 
-To calculate the precise $\text{T}_{60}$ value:
+To quantify the difference between the two spaces, the next step is to process the Conservatory data:
 
-Load the rir_energy_decay_data.csv.
+Load the RIR from the provided WAV files (rir.wav or extracted_rir.wav).
 
-Identify the linear decay region (e.g., from $-5$ dB to the noise floor at $-25$ dB).
+Calculate the Energy Decay Curve (EDC) using the Schroeder Reverse Integration Method.
 
-Perform a linear regression on this segment to determine the slope ($m$).
+Perform linear regression on the linear decay segment of the Conservatory EDC.
 
-Calculate $\text{T}_{20}$ (the time over which the 20 dB decay occurs).
+Calculate and output the precise T60 value for the Conservatory for direct comparison with the Living Room's results.
 
-Extrapolate using the formula: $\text{T}_{60} = 3 \times \text{T}_{20}$.
-
-This document serves as the foundation for the acoustic analysis script, which will perform the final linear fitting and $\text{T}_{60}$ calculation.
+This document outlines the theoretical foundation and contextualizes the ongoing acoustic analysis project.
