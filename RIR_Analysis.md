@@ -6,13 +6,13 @@ This repository contains the data and theoretical background for analyzing the a
 
 1.1. Room Impulse Response (RIR)
 
-The Room Impulse Response (RIR), denoted as $h(t)$, is the acoustic fingerprint of a space. It describes how sound waves travel from a source (e.g., a speaker) to a receiver (e.g., a microphone) within that room.
+The Room Impulse Response (RIR), denoted as $h(t)$ in acoustic literature, is the acoustic fingerprint of a space. It describes how sound waves travel from a source (e.g., a speaker) to a receiver (e.g., a microphone) within that room.
 
 The RIR is theoretically the sound recorded when an instantaneous, ideal impulse of sound is generated. In practice, due to the difficulty of generating an ideal impulse, it is typically measured by playing a known test signal (like an Exponential Sine Sweep, as used in this measurement) and mathematically de-convolving the recorded signal to derive the RIR.
 
-1.2. Reverberation Time ($\text{T}_{60}$)
+1.2. Reverberation Time (T60)
 
-Reverberation Time ($\text{T}_{60}$) is the most critical metric extracted from the RIR. It is defined as the time required for the sound energy in a room to decay by 60 decibels (dB) after the sound source has stopped.
+Reverberation Time ($\text{T}_{60}$ or T60) is the most critical metric extracted from the RIR. It is defined as the time required for the sound energy in a room to decay by 60 decibels (dB) after the sound source has stopped.
 
 A short $\text{T}_{60}$ implies an acoustically "dry" room (good for speech clarity, like a classroom). A long $\text{T}_{60}$ implies an acoustically "live" or "reverberant" room (like a cathedral or concert hall).
 
@@ -22,34 +22,33 @@ The rir_energy_decay_data.csv file is generated using the Schroeder Reverse Inte
 
 This method involves integrating the squared RIR signal backwards in time to create a smooth, cumulative decay curve, known as the Energy Decay Curve (EDC). This mathematical approach minimizes the effects of noise and non-linearities in the measured RIR, providing a much cleaner decay plot than integrating forward.
 
-The mathematical formula for the reverse integration is:
+The mathematical concept for the reverse integration is:
 
-$$E(t) = \int_{t}^{\infty} h^2(\tau) d\tau
-$$Where:
+$$E(t) = \int_{t}^{\infty} h^2(\tau) d\tau$$
 
-* $E(t)$ is the energy decay at time $t$.
-* $h^2(\tau)$ is the squared impulse response.
-* The result is normalized so the maximum value (at $t=0$) is $0$ dB.
+Note: In the acoustic analysis, this equation is calculated via discrete summation of the squared RIR data points in reverse.
 
-## 2\. Analysis Methods for Noise-Limited Data
+Where:
 
-Accurate $\text{T}_{60}$ calculation requires a **60 dB Dynamic Range** (the difference between the peak signal and the ambient noise floor).
+$E(t)$ is the energy decay at time $t$.
+
+$h^2(\tau)$ is the squared impulse response.
+
+The result is normalized so the maximum value (at $t=0$) is $0$ dB.
+
+2. Analysis Methods for Noise-Limited Data
+
+Accurate $\text{T}_{60}$ calculation requires a 60 dB Dynamic Range (the difference between the peak signal and the ambient noise floor).
 
 When the dynamic range is less than 60 dB, we use partial decay measures and extrapolate:
 
-1.  **$\text{T}_{20}$:** The time taken for the sound energy to decay by 20 dB (from $-5$ dB to $-25$ dB).$$
+T20: The time taken for the sound energy to decay by 20 dB (from $-5$ dB to $-25$ dB).
 
-$$\\text{T}*{60} = 3 \\times \\text{T}*{20}
+Extrapolation Formula: T60 = 3 * T20
 
-$$
-$$
+T30: The time taken for the sound energy to decay by 30 dB (from $-5$ dB to $-35$ dB).
 
-
-$\text{T}_{30}$: The time taken for the sound energy to decay by 30 dB (from $-5$ dB to $-35$ dB).
-
-$$\\ \text{T}*{60} = 2 \times \text{T}*{30}$$
-
-$$$$
+Extrapolation Formula: T60 = 2 * T30
 
 3. Case Study: Living Room Measurement
 
