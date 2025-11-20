@@ -78,7 +78,7 @@ The optimized TFLite model is integrated directly into the ESP32 firmware using 
 
 The ESP32 runs a continuous, ultra-low-power cycle:
 
-1.  **Record:** Capture a short segment of ambient audio.
+1.  **Record:** Capture a short segment of ambient audio from the PDM microphone.
 2.  **Feature Extraction:** Calculate the required ZCR and Spectral features in real-time.
 3.  **Inference:** Features flow through the TFLite Micro model.
 4.  **Prediction:** The model outputs the room classification (e.g., "Acoustic Quality: Dry").
@@ -91,3 +91,4 @@ This project shifts acoustic sensing from simple monitoring (keyword spotting) t
 | :--- | :--- |
 | Classifies **physical acoustic properties** (e.g., large reflective room vs. small damp office). | **Adaptive Audio Interfaces:** Voice assistants can adjust microphone gain, noise reduction, or EQ based on the classified room type. |
 | **Change Detection:** Detects major acoustic shifts (e.g., furniture added/removed). | **Smart Building Control:** HVAC or lighting can adapt to the classified room type for optimal comfort and energy use. |
+| **Occupancy Proxy:** Reverberation time subtly changes with people in the space. | **Energy Efficiency:** Fine-grained, environment-aware power decisions without requiring direct motion sensors. |
