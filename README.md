@@ -1,1 +1,138 @@
-🔊 TinyML Acoustic Feature Recognition System (AFRS)This project describes a complete end-to-end system for Acoustic Feature Recognition, leveraging an ESP32 microcontroller, dual-channel I2S for high-fidelity audio capture, a machine learning pipeline (TinyML), and deployment for real-time human-computer interaction (HCI) applications.The core goal is to enable an edge device to autonomously characterize its acoustic environment—such as room size, occupancy, or material state—by analyzing its Room Impulse Response (RIR).1. 🎤 Data Acquisition & Synchronization (ESP32)This initial phase focuses on capturing the high-quality acoustic data (the RIR) required to train the machine learning model. This is achieved using a tightly synchronized, dual-I2S, dual-core architecture on the ESP32 for high fidelity and zero-latency measurement.1.1 The RIR Measurement TechniqueThe system measures the RIR by broadcasting a known logarithmic sweep (chirp) signal and simultaneously recording the echoes using a PDM microphone. This precise synchronization prevents artifacts and is essential for accurate feature extraction.Stimulus: 20 Hz to 20 kHz Logarithmic Chirp (1 second duration).Capture: 16-bit PCM, 44.1 kHz sample rate.Result: A raw audio file containing the initial chirp followed by its reflections and reverberation.1.2 Dual-Core Architecture and SynchronizationTo ensure deterministic timing and maximum processing bandwidth, the tasks are split across the ESP32's two cores using FreeRTOS. The synchronization mechanism (semaphore) guarantees that recording begins precisely before the chirp signal starts playing.ComponentFunctionI2S PortCPU CoreRolePlayback TaskGenerates and outputs Chirp via I2S.I2S Port 1 (TX)Core 1 (App CPU)Stimulus generationRecording TaskCaptures PDM microphone data and saves to SD card.I2S Port 0 (RX)Core 0 (Pro CPU)Data capture & storageSynchronizationFreeRTOS Binary SemaphoreN/ABothEnsures recording starts before playback.2. 🧠 TinyML Model Training PipelineOnce raw RIR files are collected from various environmental conditions (e.g., small room, large hall, empty vs. occupied, hard vs. soft surfaces), they are processed to train a highly efficient deep learning model.2.1 Pre-processing and Feature EngineeringDeconvolution: The raw RIR signal is mathematically deconvolved with the original chirp signal to isolate the true Impulse Response.Acoustic Feature Extraction: The RIR is analyzed to extract standard acoustic features:$T_{60}$ (Reverberation Time)Clarity ($C_{50}, C_{80}$)Definition ($D_{50}$)Spectral features (e.g., Mel-Frequency Cepstral Coefficients - MFCCs) of the impulse response envelope.Labeling: Features are labeled based on the ground truth of the environment (e.g., Acoustic Label: large_conference_room, Occupancy Label: occupied).2.2 Model Selection and OptimizationModel Type: A small, convolutional neural network (CNN) or a recurrent neural network (RNN) is selected for sequence data classification.Optimization: Training is performed in Python (TensorFlow/Keras). The model is then converted to TensorFlow Lite (TFLite).Quantization (Crucial for TinyML): The 32-bit floating-point weights are aggressively quantized down to 8-bit integers. This reduces model size by 75% and dramatically speeds up inference on the ESP32, allowing the model to fit entirely within the device's PSRAM.3. 🚀 Deployment and InferenceThe optimized TFLite model is integrated directly into the ESP32 firmware using the TensorFlow Lite Micro library, enabling real-time environmental characterization at the edge.3.1 On-Device Inference CycleThe ESP32 runs a stripped-down measurement cycle: Playback $\to$ Record $\to$ Deconvolution $\to$ Feature Extraction.The extracted acoustic features are passed to the onboard TFLite Micro model.The model outputs a real-time prediction (e.g., "Medium Room, Unoccupied").Power Management: After a measurement, the device can return to a deep sleep state, optimizing battery life for continuous monitoring.3.2 Hardware Requirements SummaryMicrocontroller: ESP32/ESP32-S3 (with PSRAM required).Input: High-quality PDM microphone (for consistent frequency response).Output: I2S DAC/Amplifier (e.g., MAX98357A) and small speaker.Storage: SD Card (for dataset collection and initial setup logging).4. 💡 Application and HCI RelevanceThis project shifts acoustic sensing from passive monitoring (like keyword spotting) to active, environmental characterization, opening new avenues for Human-Computer Interaction (HCI).Getty ImagesWhat it Does (Contextual Awareness)The system provides Contextual Awareness by classifying the physical properties of the environment:Room State: Is this a large, reflective room or a small, damp office?Change Detection: Has furniture been rearranged or a temporary partition been installed?Occupancy Proxy: Has the reverberation time changed due to new people entering the space?Why it is Useful in HCIAdaptive Audio Interfaces: A voice assistant in a large, echoey room could automatically adjust its output (e.g., reduce bass, speak slower) to maximize intelligibility based on the real-time RIR classification.Smart Building Control: The system can classify the room type (e.g., gymnasium vs. library) and adjust HVAC or lighting modes accordingly, enhancing building automation efficiency without relying solely on visual or motion sensors.Implicit Input: Changes in the room's acoustic profile could be used as an implicit input, such as detecting a rapid change indicating a large object moved or a door slammed, triggering an event without explicit user command.Energy Efficiency: By accurately classifying the room type and state, the system enables localized, fine-grained energy decisions, enhancing the efficiency of smart buildings.
+🔊 TinyML Acoustic Feature Recognition System (AFRS)
+
+This project describes a complete end-to-end system for Acoustic Feature Recognition, leveraging an ESP32 microcontroller, dual-channel I2S for high-fidelity audio capture, a machine learning pipeline (TinyML), and deployment for real-time human-computer interaction (HCI) applications.
+
+The core goal is to enable an edge device to autonomously characterize its acoustic environment—such as room size, occupancy, or material state—by analyzing its Room Impulse Response (RIR).
+
+1. 🎤 Data Acquisition & Synchronization (ESP32)
+
+This initial phase focuses on capturing the high-quality acoustic data (the RIR) required to train the machine learning model. This is achieved using a tightly synchronized, dual-I2S, dual-core architecture on the ESP32 for high fidelity and zero-latency measurement.
+
+1.1 The RIR Measurement Technique
+
+The system measures the RIR by broadcasting a known logarithmic sweep (chirp) signal and simultaneously recording the echoes using a PDM microphone. This precise synchronization prevents artifacts and is essential for accurate feature extraction.
+
+Stimulus: 20 Hz to 20 kHz Logarithmic Chirp (1 second duration).
+
+Capture: 16-bit PCM, 44.1 kHz sample rate.
+
+Result: A raw audio file containing the initial chirp followed by its reflections and reverberation.
+
+1.2 Dual-Core Architecture and Synchronization
+
+To ensure deterministic timing and maximum processing bandwidth, the tasks are split across the ESP32's two cores using FreeRTOS. The synchronization mechanism (semaphore) guarantees that recording begins precisely before the chirp signal starts playing.
+
+Component	Function	I2S Port	CPU Core	Role
+Playback Task	Generates and outputs Chirp via I2S.	I2S Port 1 (TX)	Core 1 (App CPU)	Stimulus generation
+Recording Task	Captures PDM microphone data and saves to SD card.	I2S Port 0 (RX)	Core 0 (Pro CPU)	Data capture & storage
+Synchronization	FreeRTOS Binary Semaphore	N/A	Both	Ensures recording starts before playback
+2. 🧠 TinyML Model Training Pipeline
+
+Once raw RIR files are collected from various environmental conditions (e.g., small room, large hall, empty vs. occupied, hard vs. soft surfaces), they are processed to train a highly efficient deep learning model.
+
+2.1 Pre-processing and Feature Engineering
+
+Deconvolution: The raw RIR signal is mathematically deconvolved with the original chirp signal to isolate the true Impulse Response.
+
+Acoustic Feature Extraction: The RIR is analyzed to extract standard acoustic features:
+
+𝑇
+60
+T
+60
+	​
+
+ (Reverberation Time)
+
+Clarity (
+𝐶
+50
+,
+𝐶
+80
+C
+50
+	​
+
+,C
+80
+	​
+
+)
+
+Definition (
+𝐷
+50
+D
+50
+	​
+
+)
+
+Spectral features (e.g., MFCCs) of the impulse response envelope
+
+Labeling: Features are labeled based on the ground truth of the environment (e.g., large_conference_room, occupied).
+
+2.2 Model Selection and Optimization
+
+Model Type: Small CNN or RNN suitable for sequence classification.
+
+Training: Performed in Python using TensorFlow/Keras, then converted to TFLite.
+
+Quantization: Weights reduced from 32-bit float to 8-bit integers—critical for fitting inside ESP32 PSRAM and enabling fast inference.
+
+3. 🚀 Deployment and Inference
+
+The optimized TFLite model is integrated directly into the ESP32 firmware using TensorFlow Lite Micro, enabling real-time environmental characterization at the edge.
+
+3.1 On-Device Inference Cycle
+
+The ESP32 runs a full acoustic recognition cycle:
+
+Playback
+
+Record
+
+Deconvolution
+
+Feature Extraction
+
+Extracted features flow through the TFLite Micro model, which outputs a prediction such as “Medium Room, Unoccupied”.
+
+Power Management: Device can deep-sleep between measurements for ultra-low-power monitoring.
+
+3.2 Hardware Requirements Summary
+
+Microcontroller: ESP32/ESP32-S3 (PSRAM required)
+
+Input: High-quality PDM microphone
+
+Output: I2S DAC/Amplifier (e.g., MAX98357A) + speaker
+
+Storage: SD Card
+
+4. 💡 Application and HCI Relevance
+
+This project shifts acoustic sensing from passive monitoring (e.g., keyword spotting) to active environmental characterization, opening new possibilities for Human-Computer Interaction.
+
+(Image reference: Getty Images)
+
+What it Does (Contextual Awareness)
+
+The system classifies physical acoustic properties of the environment:
+
+Room State: large reflective room vs. small damp office
+
+Change Detection: furniture rearranged, partitions added
+
+Occupancy Proxy: reverberation-time changes with people in the space
+
+Why it is Useful in HCI
+
+Adaptive Audio Interfaces: Voice assistants adjust EQ, speed, etc.
+
+Smart Building Control: HVAC/lighting adapts to classified room type
+
+Implicit Input: Acoustic changes as triggers (e.g., door slam → event)
+
+Energy Efficiency: Fine-grained, environment-aware power decisions
