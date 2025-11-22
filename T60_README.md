@@ -187,3 +187,141 @@ Fixed Rig Placement: Both the loudspeaker (source) and the microphone (receiver)
 Consistent Height: A consistent height (e.g., $1.2\text{ m}$) for the microphone is used across all rooms.
 
 Operator/Furniture Exclusion: Measurements are never taken directly on soft, absorptive materials (like sofas or beds) or near the operator, as this introduces inconsistent high-frequency absorption that skews the relative feature values.
+
+Acoustic Feature Distinctness Report: T60 Analysis
+
+This report provides a detailed analysis confirming the acoustic separability of the four measured environments: Bathroom 1, Bathroom 2, Living Room, and Conservatory. The primary feature used is the Reverberation Time extrapolated from a $30\text{ dB}$ decay segment ($T_{30}$), which serves as the most robust single-parameter classification feature.
+
+1. Quantitative Summary & Distinctness Confirmation
+
+The following table presents the final average $T_{30}$ values, which form four clearly distinct clusters.
+
+Room Type
+
+Average $T_{30}$ (s)
+
+Feature Cluster
+
+Absolute Range
+
+Bathroom 1
+
+$0.853$
+
+Shortest Decay
+
+$0.840\text{ s} - 0.865\text{ s}$
+
+Bathroom 2
+
+$0.887$
+
+Short Decay
+
+$0.871\text{ s} - 0.902\text{ s}$
+
+Living Room
+
+$1.299$
+
+Moderate Decay
+
+$1.286\text{ s} - 1.312\text{ s}$
+
+Conservatory
+
+$1.445$
+
+Longest Decay
+
+$1.391\text{ s} - 1.498\text{ s}$
+
+Conclusion on Distinctness
+
+The categories are highly distinct. There is no overlap between the highest $T_{30}$ of one category and the lowest $T_{30}$ of the next.
+
+Classification Boundary
+
+$\Delta T_{30}$ (Gap)
+
+Decision Threshold (Approx)
+
+Bathroom 2 $\rightarrow$ Living Room
+
+$\mathbf{0.397\text{ s}}$
+
+$\approx 1.10\text{ s}$
+
+Living Room $\rightarrow$ Conservatory
+
+$\mathbf{0.079\text{ s}}$
+
+$\approx 1.35\text{ s}$
+
+The largest gap is between the high-absorption rooms (Bathrooms) and the moderate-absorption rooms (Living Room/Conservatory). The smallest, but still sufficient, gap is between the Living Room and the Conservatory.
+
+2. Contextual Analysis of Difference in $T_{60}$
+
+The differences in $T_{60}$ are directly proportional to the ratio of the room's Volume (V) and the total Acoustic Absorption (A), as defined by the Sabine Equation ($T_{60} \propto V/A$).
+
+Category 1: Ultra-Short Decay (Bathroom 1 & 2)
+
+Room Context
+
+Expected Acoustic Characteristics
+
+Explanation for Difference
+
+Physical Context
+
+Smallest volume rooms with primarily hard, reflective surfaces (tile, porcelain, glass).
+
+Dominant Factor: Volume. The small physical size drastically limits the distance sound waves can travel before hitting a surface, causing a rapid succession of reflections (high reflection density) but a very short overall decay time.
+
+Bathroom 1 ($0.853\text{ s}$) vs. Bathroom 2 ($0.887\text{ s}$)
+
+Difference: $\mathbf{34\text{ ms}}$. This is attributed to minor differences in acoustic load. Bathroom 2 likely has a slightly larger volume, a less absorbent shower curtain, or the measurement microphone/source was closer to a highly reflective wall (like a mirror), extending the decay time slightly.
+
+
+
+Category 2: Moderate Decay (Living Room)
+
+Room Context
+
+Expected Acoustic Characteristics
+
+Explanation for Difference
+
+Physical Context
+
+Medium-to-large volume, high degree of sound-absorbing materials (thick fabric sofas, carpets, heavy curtains, bookcases).
+
+Dominant Factor: Absorption. Despite a larger volume than the bathrooms (which tends to increase $T_{60}$), the high concentration of porous and soft materials massively increases the total Acoustic Absorption ($A$). This results in a desirable, moderate $T_{60}$ ($1.299\text{ s}$), ideal for speech and listening.
+
+Category 3: Long Decay (Conservatory)
+
+Room Context
+
+Expected Acoustic Characteristics
+
+Explanation for Difference
+
+Physical Context
+
+Large volume, dominant materials are highly reflective (glass walls, brick base, metal framing). Minimal furnishings/soft materials.
+
+Dominant Factor: Reflection. The large volume and extremely low absorption (very low $A$) mean sound energy takes the longest time to dissipate. This predictably results in the longest measured $T_{60}$ ($1.445\text{ s}$).
+
+3. Classification Strategy for TinyML
+
+The clear separation between the $T_{30}$ clusters enables a simple, sequential thresholding classification algorithm:
+
+If $T_{30} < 0.87\text{ s}$: Classify as Bathroom 1.
+
+If $0.87\text{ s} \le T_{30} < 1.0\text{ s}$: Classify as Bathroom 2.
+
+If $1.0\text{ s} \le T_{30} < 1.37\text{ s}$: Classify as Living Room.
+
+If $T_{30} \ge 1.37\text{ s}$: Classify as Conservatory.
+
+This approach requires minimal computational power on the ESP32-S3, relying only on the accurate calculation of the single $T_{30}$ feature.
