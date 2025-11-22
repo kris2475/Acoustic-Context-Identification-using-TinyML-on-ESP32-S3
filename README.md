@@ -1,94 +1,120 @@
-# 🔊 TinyML Acoustic Feature Recognition System (AFRS)
+# Acoustic Feature Analysis: Reverberation Time (T60) Measurement
 
-### Passive Classification of Room Acoustics using ESP32
+## 🇬🇧 Project Overview
 
-This project describes a complete system for **Acoustic Feature Recognition (AFR)**, leveraging an ESP32-S3 microcontroller and a machine learning pipeline (TinyML) to **passively classify a room's acoustic quality** (liveliness/dryness) by analyzing background sounds.
+This repository contains the firmware and post-processing Python script
+for a dedicated acoustic measurement system. The primary goal is to
+accurately measure the Reverberation Time (T60) of an environment using
+a low-cost ESP32-S3 microcontroller, following established acoustic
+engineering principles.
 
-The system uses an **Active Measurement (RIR)** phase solely for initial **Ground-Truth Labeling** and then deploys a small neural network to perform **Passive Inference** in real-time.
+The system performs two main types of data acquisition:
 
----
+-   **Active Measurement:** Room Impulse Response (RIR) capture using a
+    logarithmic sine sweep (chirp) for precise T60 calculation.
+-   **Passive Measurement:** Ambient pink noise recording for
+    environmental acoustic feature classification.
 
-## 1. 🔬 Methodology: Active Calibration to Passive Inference
+All raw audio data is recorded and stored on an SD card for batch
+post-processing.
 
-The project is structured into two distinct data collection and processing phases:
+------------------------------------------------------------------------
 
-### Phase A: Active RIR Measurement (Ground-Truth Labeling)
+## 🔬 Methodology for T60 Calculation
 
-This process uses a known stimulus (a chirp) and measurement to establish an objective, scientific label for a room's acoustics.
+The T60 is calculated from the RIR using the Schroeder integration
+method within the `batch_rir_processor.py` script.
 
-| Metric | Role | Derived From |
-| :--- | :--- | :--- |
-| **Room Impulse Response (RIR)** | The room's acoustic fingerprint. | Active chirp playback and simultaneous recording. |
-| **Reverberation Time ($T_{60}$)** | The definitive measure of "liveliness." | Calculated from the **Energy Decay Curve (EDC)** derived from the RIR. |
+### 1. RIR Acquisition (Sine Sweep)
 
-### Phase B: Passive Data Logging (Training Data)
+The ESP32-S3 plays a logarithmic sine sweep (chirp) through the speaker
+while simultaneously recording the signal via the MEMS microphone. The
+recorded signal captures the room's influence (reflections, absorption)
+on the sound.
 
-Once the $T_{60}$ is known, the system is switched to silent, passive mode to collect the actual training data. All recorded background audio clips are labeled with the $T_{60}$-derived category (e.g., "Lively," "Dry").
+### 2. RIR Extraction (Python)
 
----
+The pure Room Impulse Response (RIR) is extracted by performing a linear
+cross-correlation between the recorded room response and the known,
+clean reference chirp.
 
-## 2. 💾 Data Acquisition & Hardware Configuration
+### 3. Energy Decay Curve (EDC) and Extrapolation
 
-The system relies on a high-fidelity ESP32-S3 setup utilizing its dual-core architecture and I2S peripherals.
+The T60 is the time it takes for sound energy to decay by **60 dB**. The
+post-processing script calculates the Energy Decay Curve (EDC) and
+applies linear regression over specific decay segments to accurately
+extrapolate the T60 value, even in the presence of a noise floor.
 
-### 2.1 Active Capture Sketch (`Acoustic_Feature_Recognition_Capture.ino`)
+The script calculates three T60 variants for robust analysis:
 
-The initial sketch is designed for precision RIR measurement:
+-   **T20-based T60:** From −5 dB to −25 dB\
+-   **T30-based T60:** From −5 dB to −35 dB\
+-   **T25-based T60:** From −5 dB to −30 dB
 
-* **Technique:** Logarithmic sweep (chirp) broadcasted via I2S TX and recorded via I2S PDM RX simultaneously.
-* **Synchronization:** FreeRTOS binary semaphores are used to guarantee the microphone recording begins precisely before the chirp starts playing.
-* **Initial Bug Fix:** The original sketch was corrected to remove a severe **digital clipping** issue caused by an excessive post-recording `VOLUME_GAIN` of `16.0`.
+------------------------------------------------------------------------
 
-| Component | Function | I2S Port | CPU Core |
-| :--- | :--- | :--- | :--- |
-| **Playback Task** | Generates and outputs Chirp. | I2S Port 1 (TX) | Core 1 (App CPU) |
-| **Recording Task** | Captures PDM microphone data. | I2S Port 0 (RX) | Core 0 (Pro CPU) |
+## 🛠️ Hardware Requirements
 
-### 2.2 Passive Logging Sketch (`TinyML_Audio_Logger.ino`)
+  ----------------------------------------------------------------------------
+  Component         Description          Pinout
+  ----------------- -------------------- -------------------------------------
+  Microcontroller   ESP32-S3             Core Processor
+                    (WROOM-1/N16R8)      
 
-This simplified sketch is used after calibration to collect hundreds of 1-second background noise clips for training. It removes all playback and chirp generation logic.
+  Speaker/DAC       MAX98357A I2S        BCLK (1), LRC (2), DOUT (3)
+                    Amplifier            
 
----
+  Microphone        PDM MEMS Microphone  PDM_CLK (42), PDM_DATA (41)
 
-## 3. 🧠 TinyML Model Training Pipeline
+  Storage           MicroSD Card Module  SPI Pins (CS: 21, SCK: 7, MISO: 8,
+                                         MOSI: 9)
+  ----------------------------------------------------------------------------
 
-The collected data is processed to train a low-memory model suitable for the ESP32-S3.
+------------------------------------------------------------------------
 
-### 3.1 Feature Engineering for Acoustic Classification
+## 💻 Firmware (`ESP32S3_RIR_T60_...ino`)
 
-The model is trained on **passive background audio clips**, which requires features sensitive to the subtle temporal smear that reverberation causes in ambient noise:
+The Arduino sketch handles I2S initialisation for both output (DAC) and
+input (PDM mic), SD card file management, and the sound
+generation/capture sequence.
 
-* **Target Labels:** Categories derived from the RT60 calculated in Phase A (e.g., "RT60 < 0.4s (Dry)", "RT60 > 0.8s (Lively)").
-* **Extracted Features:**
-    * **Temporal Decay:** Zero-Crossing Rate (ZCR), RMS Energy decay.
-    * **Spectral Smearing:** Spectral Centroid, Spectral Flatness, and Mel-Frequency Cepstral Coefficients (MFCCs).
+### Key Features
 
-### 3.2 Model Optimization
+-   **Dynamic Scaling:** A test chirp determines optimal amplitude for
+    best SNR without clipping.
+-   **RIR Capture:** Saves 5-second raw audio to WAV (e.g.,
+    `RIR_livingroom_YYYYMMDD_HHMMSS.wav`).
+-   **Passive Capture:** Records thirty 2-second ambient pink-noise
+    clips.
 
-* **Model Type:** Small CNN or RNN suitable for sequence classification.
-* **Quantization:** Weights are reduced from 32-bit float to 8-bit integers, which is essential for fitting the model into the ESP32's PSRAM and enabling fast inference.
+------------------------------------------------------------------------
 
----
+## 🐍 Python Post-Processing (`batch_rir_processor.py`)
 
-## 4. 🚀 Deployment and Passive Inference
+This script performs high-precision acoustic analysis on the WAV files
+collected from the SD card.
 
-The optimized TFLite model is integrated directly into the ESP32 firmware using **TensorFlow Lite Micro (TFLM)**.
+### Dependencies
 
-### 4.1 On-Device Passive Inference Cycle
+    pip install numpy matplotlib scipy pandas openpyxl
 
-The ESP32 runs a continuous, ultra-low-power cycle:
+### Usage
 
-1.  **Record:** Capture a short segment of ambient audio from the PDM microphone.
-2.  **Feature Extraction:** Calculate the required ZCR and Spectral features in real-time.
-3.  **Inference:** Features flow through the TFLite Micro model.
-4.  **Prediction:** The model outputs the room classification (e.g., "Acoustic Quality: Dry").
+1.  Copy all `RIR_*.wav` files into the script directory.
+2.  Run:
 
-### 4.2 Application and HCI Relevance
+```{=html}
+<!-- -->
+```
+    python batch_rir_processor.py
 
-This project shifts acoustic sensing from simple monitoring (keyword spotting) to **active environmental context awareness**, enabling intelligent control systems.
+------------------------------------------------------------------------
 
-| Contextual Awareness | HCI Relevance |
-| :--- | :--- |
-| Classifies **physical acoustic properties** (e.g., large reflective room vs. small damp office). | **Adaptive Audio Interfaces:** Voice assistants can adjust microphone gain, noise reduction, or EQ based on the classified room type. |
-| **Change Detection:** Detects major acoustic shifts (e.g., furniture added/removed). | **Smart Building Control:** HVAC or lighting can adapt to the classified room type for optimal comfort and energy use. |
-| **Occupancy Proxy:** Reverberation time subtly changes with people in the space. | **Energy Efficiency:** Fine-grained, environment-aware power decisions without requiring direct motion sensors. |
+## 📁 Output Artefacts
+
+The script creates an **rir_analysis_output/** directory containing:
+
+-   **RIR_T60_Summary.xlsx:** Excel summary of T20, T25, T30 T60 values.
+-   **Extracted RIR WAV files**
+-   **CSV Decay Data:** Time-series EDC values.
+-   **EDC Plot (PNG):** Schroeder integration with regression line.
