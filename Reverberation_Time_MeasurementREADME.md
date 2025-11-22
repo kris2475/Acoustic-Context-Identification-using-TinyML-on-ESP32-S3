@@ -156,3 +156,34 @@ This system enables:
 -   Automated post‑processing with exportable analytics\
 -   Passive acoustic fingerprinting for ML‑driven environment
     classification
+
+
+    T60 Measurement Protocol: Practical Feature Extraction vs. ISO Standard
+
+Rationale for Measurement Methodology
+
+The calculated Reverberation Time (T60) values in this dataset are employed as a crucial feature to classify the acoustic environment (e.g., "echoey" versus "damp") of each sampled room. My primary objective is to train a DL/TinyML model for robust environmental classification, not to generate certified acoustic reports.
+
+Consequently, this project adopts a pragmatic, data-driven methodology that prioritises speed and internal consistency over strict compliance with professional acoustic standards like ISO 3382-1.
+
+Why Single-Point Measurements Are Used
+
+Feature Value is Relative: For my machine learning application, the model does not require the absolute, spatially-averaged T60 value. It only needs to learn the relative acoustic distinction between rooms. A T60 of $1.7\text{ s}$ is a strong indicator of a reflective space compared to a T60 of $0.5\text{ s}$ for an absorptive space. This differentiation remains robust even with single-point measurements.
+
+Capturing Localised Acoustic Reality: High measured values (e.g., the $\approx 1.7\text{ s}$ observed in the conservatory) are accepted as accurate feature representations. These values often capture the effect of strong localised Room Modes (standing waves), which are a genuine acoustic characteristic of that specific location and are highly relevant to the resulting pink noise data recorded there.
+
+Efficiency for Scale: Adhering to the ISO standard's multi-point measurement requirement (4-5 locations per room) is computationally and time-intensive. For rapid, large-scale data collection, a single, highly consistent measurement point per room provides the optimum trade-off between feature fidelity and acquisition speed.
+
+T60 as a Relative Gauge (High Values Accepted)
+
+In professional acoustics, multiple measurements are averaged to obtain a precise, room-wide T60 suitable for building regulations or compliance. For this project, however, the calculated T60 is treated simply as a high-fidelity gauge for relative "echoeyness." I accept that single-point measurements, especially in highly reflective rooms like the Conservatory, will yield higher, locally focused values (e.g., $1.7\text{ s}$) that may differ from a true, spatially averaged measurement. Crucially, this high value still correctly and robustly signals the room's highly reflective nature compared to a well-damped room's $\approx 0.5\text{ s}$ reading. Since the pink noise data is collected at this exact same location, the high T60 acts as a perfect correlating feature, linking the acoustic character of the room at the point of data capture to the raw audio features processed by the DL model. 
+
+Standardised Procedure (Mandatory for Internal Consistency)
+
+To ensure that the T60 values remain comparable across all collected data (which is paramount for ML training), the following procedure is strictly maintained:
+
+Fixed Rig Placement: Both the loudspeaker (source) and the microphone (receiver) must be placed on rigid, non-absorptive supports (stands or hard tables).
+
+Consistent Height: A consistent height (e.g., $1.2\text{ m}$) for the microphone is used across all rooms.
+
+Operator/Furniture Exclusion: Measurements are never taken directly on soft, absorptive materials (like sofas or beds) or near the operator, as this introduces inconsistent high-frequency absorption that skews the relative feature values.
